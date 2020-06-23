@@ -1,0 +1,127 @@
+from PyQt5.QtWidgets import QMainWindow, QAction, qApp, QApplication, QPlainTextEdit, QLabel, QPushButton, QFileDialog, QTextEdit
+from PyQt5.QtGui import QIcon
+import sys
+import os
+
+class MyWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        self.x = 183
+        self.y = 84
+        self.width = 1000
+        self.height = 600
+        self.currentOpening = ""
+
+        self.initUI() 
+self.initUI()
+    def initUI(self):
+        self.setGeometry(self.x, self.y, self.width, self.height)
+        self.setWindowTitle("NotePad+++")
+        self.statusBar()
+        self.filebar = self.menuBar()
+
+        #File
+        self.exitAct = QAction(QIcon('90833571-exit-red-glossy-circle-icon-button-design-vector-illustration.jpg'), '&Exit', self)
+        self.exitAct.setShortcut('Ctrl+Q')
+        self.exitAct.setStatusTip('Exit application')
+        self.exitAct.triggered.connect(qApp.quit)
+
+        self.saveAsAct = QAction('&Save As', self)
+        self.saveAsAct.setShortcut('Ctrl+S+A')
+        self.saveAsAct.setStatusTip('Save as')
+        self.saveAsAct.triggered.connect(self.saveAs)
+
+        self.saveAct = QAction('&Save', self)
+        self.saveAct.setShortcut('Ctrl+S')
+        self.saveAct.setStatusTip('Save')
+        self.saveAct.triggered.connect(self.save)
+
+        self.openAct = QAction('&Open', self)
+        self.openAct.setShortcut('Ctrl+O')
+        self.openAct.setStatusTip('Open file')
+        self.openAct.triggered.connect(self.openFile)
+
+        self.fileMenu = self.filebar.addMenu('&File')
+        self.fileMenu.addAction(self.exitAct)
+        self.fileMenu.addAction(self.saveAsAct)
+        self.fileMenu.addAction(self.saveAct)
+        self.fileMenu.addAction(self.openAct)
+
+        #Edit
+        self.colorAct = QAction('&Change backgroud color', self)
+        self.colorAct.setShortcut('Ctrl+V')
+        self.colorAct.setStatusTip('Change background color')
+        self.colorAct.triggered.connect(self.changeBackgroundColor)
+
+        self.editMenu = self.filebar.addMenu('&Edit')
+        self.editMenu.addAction(self.colorAct)
+
+        #Help
+        # exitAct = QAction(QIcon('90833571-exit-red-glossy-circle-icon-button-design-vector-illustration.jpg'), '&Exit', self)
+        # exitAct.setShortcut('Ctrl+Q')
+        # exitAct.setStatusTip('Exit application')
+        # exitAct.triggered.connect(qApp.quit)
+        #
+        # menubar = self.menuBar()
+        # fileMenu = menubar.addMenu('&File')
+        # fileMenu.addAction(exitAct)
+
+        # Create textbox
+        self.textbox = QTextEdit(self)
+        self.textbox.setGeometry(0, 20, self.width, self.height - 40)
+        self.textbox.textChanged.connect(self.updateCharacterCounter)
+
+        #Characters
+        self.characterCounter = QLabel(self)
+        self.characterCounter.setGeometry(self.width - 200, self.height - 20, 200, 20)
+        self.characterCounter.setText(f"{0} characters")
+
+    def update(self):
+        self.label.adjustSize()
+
+    def changeBackgroundColor(self):
+         self.setStyleSheet("background-color: yellow;")
+
+    def saveAs(self):
+        name, _ = QFileDialog.getSaveFileName(self)
+
+        text = self.textbox.toPlainText()
+        with open(name, 'w') as f:
+            f.write(text)
+
+        self.currentOpening = name
+
+        self.setWindowTitle(f"{os.path.split(name)[1]} -- {os.path.split(name)[0]} -- NotePad+++")
+
+    def save(self):
+        text = self.textbox.toPlainText()
+        with open(self.currentOpening, 'w') as f:
+            f.write(text)
+
+    def openFile(self):
+        name, _ = QFileDialog.getOpenFileName(self)
+        file = open(name,'r')
+
+        with file:
+            text = file.read()
+            print(text)
+            self.textbox.setText(text)
+
+        self.currentOpening = name
+        self.setWindowTitle(f"{os.path.split(name)[1]} -- {os.path.split(name)[0]} -- NotePad+++")
+
+    def updateCharacterCounter(self):
+        print("Hi")
+        counter = len(self.textbox.toPlainText())
+        print(counter)
+        self.characterCounter.setText(f"{counter} characters")
+
+def window():
+    app = QApplication(sys.argv)
+    win = MyWindow()
+
+    win.show()
+    sys.exit(app.exec_())
+
+window()

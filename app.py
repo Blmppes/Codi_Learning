@@ -1,102 +1,166 @@
-'''import numpy as np
-import cv2
-from PIL import ImageGrab
-
-fourcc = cv2.VideoWriter_fourcc(*'XVID')
-out = cv2.VideoWriter("out.mp4", fourcc, 5.0, (1200, 750))
-
-while(True):
-    screen = np.array(ImageGrab.grab(bbox=(0, 40, 800, 640))) #x, y, w, h
-
-    cv2.imshow('Screen',cv2.cvtColor(screen, cv2.COLOR_BGR2RGB))
-    out.write(screen)
-
-    key = cv2.waitKey(1)
-    if key == 27:
-        break
-
-out.release()
-cv2.destroyAllWindows()'''
-
-
-# import time
-# import cv2
-# import mss
-# import numpy as np
-# import matplotlib as plt
-#
-# fourcc = cv2.VideoWriter_fourcc(*'XVID')
-# out = cv2.VideoWriter("output.avi", fourcc, 20.0,(1280, 720))
-# images = []
-#
-# with mss.mss() as sct:
-#     # Part of the screen to capture
-#     monitor = {'top': 40, 'left': 0, 'width': 800, 'height': 640}
-#
-#     while 'Screen capturing':
-#         last_time = time.time()
-#
-#         # Get raw pixels from the screen, save it to a Numpy array
-#         img = np.array(sct.grab(monitor))
-#         img = cv2.resize(img, (1280, 720))
-#         frame = img
-#
-#         cv2.putText(frame, "FPS: %f" % (1.0 / (time.time() - last_time)),
-#                     (10, 10),  cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
-#         out.write(frame)
-#         cv2.imshow('frame', frame)
-#
-#         images.append(frame)
-#
-#         print('fps: {0}'.format(1 / (time.time()-last_time)))
-#
-#         # Press "q" to quit
-#         if cv2.waitKey(25) & 0xFF == ord('q'):
-#             #for i in range(len(images)):
-#                 #out.write(images[i])
-#             out.release()
-#             cv2.destroyAllWindows()
-#             break
-
-'''
+from PyQt5.QtWidgets import QMainWindow, QAction, qApp, QApplication, QPlainTextEdit, QLabel, QPushButton, QFileDialog, QTextEdit
+from PyQt5.QtGui import QIcon
 import sys
-import time
-import numpy
+import os
+import re
 
-from screen_recorder_sdk import screen_recorder
+class MyWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        self.x = 183
+        self.y = 84
+        self.width = 1000
+        self.height = 600
+        self.currentOpening = ""
+        self.suggestionList = set()
+
+        self.initUI()
+
+    def initUI(self):
+        self.setStyleSheet("background-color: black; color: white")
+        self.setGeometry(self.x, self.y, self.width, self.height)
+        self.setWindowTitle("NotePad+++")
+        self.statusBar()
+        self.filebar = self.menuBar()
+
+        #File
+        self.exitAct = QAction(QIcon('90833571-exit-red-glossy-circle-icon-button-design-vector-illustration.jpg'), '&Exit', self)
+        self.exitAct.setShortcut('Ctrl+Q')
+        self.exitAct.setStatusTip('Exit application')
+        self.exitAct.triggered.connect(qApp.quit)
+
+        self.saveAsAct = QAction('&Save As', self)
+        self.saveAsAct.setShortcut('Ctrl+S+A')
+        self.saveAsAct.setStatusTip('Save as')
+        self.saveAsAct.triggered.connect(self.saveAs)
+
+        self.saveAct = QAction('&Save', self)
+        self.saveAct.setShortcut('Ctrl+S')
+        self.saveAct.setStatusTip('Save')
+        self.saveAct.triggered.connect(self.save)
+
+        self.openAct = QAction('&Open', self)
+        self.openAct.setShortcut('Ctrl+O')
+        self.openAct.setStatusTip('Open file')
+        self.openAct.triggered.connect(self.openFile)
+
+        self.fileMenu = self.filebar.addMenu('&File')
+        self.fileMenu.addAction(self.exitAct)
+        self.fileMenu.addAction(self.saveAsAct)
+        self.fileMenu.addAction(self.saveAct)
+        self.fileMenu.addAction(self.openAct)
+
+        #Edit
+        self.colorAct = QAction('&Change backgroud color', self)
+        self.colorAct.setShortcut('Ctrl+V')
+        self.colorAct.setStatusTip('Change background color')
+        self.colorAct.triggered.connect(self.changeBackgroundColor)
+
+        self.editMenu = self.filebar.addMenu('&Edit')
+        self.editMenu.addAction(self.colorAct)
+
+        #Help
+        # exitAct = QAction(QIcon('90833571-exit-red-glossy-circle-icon-button-design-vector-illustration.jpg'), '&Exit', self)
+        # exitAct.setShortcut('Ctrl+Q')
+        # exitAct.setStatusTip('Exit application')
+        # exitAct.triggered.connect(qApp.quit)
+        #
+        # menubar = self.menuBar()
+        # fileMenu = menubar.addMenu('&File')
+        # fileMenu.addAction(exitAct)
+
+        # Create textbox
+        self.textbox = QTextEdit(self)
+        self.textbox.setGeometry(0, 20, self.width, self.height - 40)
+        self.textbox.textChanged.connect(self.updateCharacterCounter)
+        self.textbox.textChanged.connect(self.suggest)
+
+        #Characters
+        self.characterCounter = QLabel(self)
+        self.characterCounter.setGeometry(self.width - 200, self.height - 20, 200, 20)
+        self.characterCounter.setText(f"{0} characters")
+
+        self.suggestLabel = QLabel(self)
+        self.suggestLabel.setGeometry(self.width - 100, self.height - 18, 100, 20)
+
+    def update(self):
+        self.suggestLabel.adjustSize()
+
+    def changeBackgroundColor(self):
+         self.setStyleSheet("background-color: yellow;")
+
+    def saveAs(self):
+        name, _ = QFileDialog.getSaveFileName(self)
+
+        text = self.textbox.toPlainText()
+        if(name != ''):
+            with open(name, 'w') as f:
+                f.write(text)
+                self.suggestionList.update(re.split(' |\n', text))
+
+            self.currentOpening = name
+
+            self.setWindowTitle(f"{os.path.split(name)[1]} -- {os.path.split(name)[0]} -- Coditor 0.2")
 
 
-def main ():
-    screen_recorder.enable_dev_log ()
-    pid = sys.argv[1]
-    screen_recorder.init_resources (pid)
+    def save(self):
+        text = self.textbox.toPlainText()
+        self.suggestionList.update(re.split(' |\n', text))
+        # self.fixSuggestionList()
+        if(self.currentOpening != ''):
+            with open(self.currentOpening, 'w') as f:
+                f.write(text)
+        else:
+            self.saveAs()
 
-    screen_recorder.get_screenshot (5).save ('test_before.png')
 
-    screen_recorder.start_video_recording ('video1.mp4', 30, 8000000, True)
-    time.sleep (5)
-    screen_recorder.get_screenshot (5).save ('test_during_video.png')
-    time.sleep (5)
-    screen_recorder.stop_video_recording ()
+    def openFile(self):
+        name, _ = QFileDialog.getOpenFileName(self)
 
-    screen_recorder.start_video_recording ('video2.mp4', 30, 8000000, True)
-    time.sleep (5)
-    screen_recorder.stop_video_recording ()
+        if(name != ''):
+            self.suggestionList = set()
+            with open(name, 'r') as file:
+                text = file.read()
+                self.textbox.setText(text)
+                self.suggestionList.update(re.split(' |\n', text))
+                # self.fixSuggestionList()
 
-    screen_recorder.free_resources ()
+            self.currentOpening = name
+            self.setWindowTitle(f"{os.path.split(name)[1]} -- {os.path.split(name)[0]} -- Coditor 0.2")
 
-if __name__ == "__main__":
-    main ()
-'''
-import cv2
+    def updateCharacterCounter(self):
+        counter = len(self.textbox.toPlainText())
+        self.characterCounter.setText(f"{counter} characters")
 
-cap = cv2.VideoCapture(0)
+    def suggest(self):
+        #To get the word is being typed took me a lot of time, but finally i solved it =)
+        #Get the word is being typed
+        cursor = self.textbox.textCursor()
+        string_list = re.split(" |\n", self.textbox.toPlainText()[0: cursor.selectionStart()])
+        string = string_list[len(string_list) - 1]
 
-while(True):
-    ret, frame = cap.read()
-    cv2.imshow("ghen co vy",frame)
-    if cv2.waitKey(10) & 0xff == ord('q'):
-        break
+        for i in self.suggestionList:
+            if(i != '' and i[0 : len(string)] == string):
+                print(i)
+                print(self.suggestionList)
+                self.suggestLabel.setText(i)
+                self.update()
+                break
+            # else:
+            #     self.suggestLabel.setText('')
+            #     self.update()
 
-cap.release()
-cv2.destroyAllWindows()
+
+    # def fixSuggestionList(self):
+    #     for i in range(len(self.suggestionList)):
+    #         list[i] = list[i].rstrip("\n")
+
+def window():
+    app = QApplication(sys.argv)
+    win = MyWindow()
+
+    win.show()
+    sys.exit(app.exec_())
+
+window()
