@@ -195,11 +195,12 @@ class MyWindow(QMainWindow):
 
         cursor = self.textbox.textCursor()
         string_list = re.split(" |\n", self.textbox.toPlainText()[0: cursor.position()])
-        x1 = cursor.position() - len(string_list[len(string_list) - 1])
+        ll = len(string_list[len(string_list) - 1])
 
-        cursor.insertText(text)
-        cursor.setPosition(x1, QtGui.QTextCursor.KeepAnchor)
+        cursor.insertText(text[ll:])
+        x1 = cursor.position()
         self.textbox.setTextCursor(cursor)
+        #cursor.setPosition(x1, QtGui.QTextCursor.KeepAnchor)
 
 def RUN_APP():
     app = QApplication(sys.argv)
